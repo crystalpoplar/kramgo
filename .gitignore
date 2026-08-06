@@ -1,0 +1,13 @@
+# Binary output directory
+bin/
+dist/
+
+# Go build cache (not needed in source control)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
