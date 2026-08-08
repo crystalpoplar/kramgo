@@ -1,8 +1,12 @@
-name: Go Tests
+name: Release
 
 on:
   push:
-  pull_request:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -31,19 +35,19 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            output: kramgo-linux-amd64
+            ext: ''
           - goos: linux
             goarch: arm64
-            output: kramgo-linux-arm64
+            ext: ''
           - goos: darwin
             goarch: amd64
-            output: kramgo-darwin-amd64
+            ext: ''
           - goos: darwin
             goarch: arm64
-            output: kramgo-darwin-arm64
+            ext: ''
           - goos: windows
             goarch: amd64
-            output: kramgo-windows-amd64.exe
+            ext: '.exe'
 
     steps:
       - name: Checkout code
@@ -61,10 +65,35 @@ jobs:
           CGO_ENABLED: 0
         run: |
           mkdir -p dist
-          go build -trimpath -ldflags="-s -w" -o dist/${{ matrix.output }} ./cmd/kramgo
+          BIN_NAME="kramgo-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}"
+          go build -trimpath -ldflags="-s -w" -o "dist/${BIN_NAME}" ./cmd/kramgo
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.output }}
-          path: dist/${{ matrix.output }}
+          name: kramgo-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*
+          generate_release_notes: true
