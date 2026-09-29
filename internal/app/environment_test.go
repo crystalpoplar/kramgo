@@ -3,18 +3,9 @@ package app
 import (
 	"fmt"
 	"io"
-	"os"
 )
 
-var requiredDirectories = []string{
-	"config",
-	"data",
-	"logs",
-}
-
-var homeDirectory, _ = os.UserHomeDir()
-
-func Run(w io.Writer) error {
+func testCreateRequiredDirectories(w io.Writer) error {
 	_, err := fmt.Fprintln(w, "kramgo is ready")
 	for _, dir := range requiredDirectories {
 		err := createDirectoryIfNotExists(fmt.Sprintf("%s/%s", homeDirectory, dir))

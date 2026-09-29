@@ -1,0 +1,18 @@
+[Unit]
+Description=Kramgo Ollama network proxy
+After=network-online.target
+Wants=network-online.target
+After=ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/home/dtk1376
+ExecStart=/home/dtk1376/kramgo --serve --listen 0.0.0.0:8080 --ollama-url http://127.0.0.1:11434
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
