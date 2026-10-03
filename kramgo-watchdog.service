@@ -1,0 +1,16 @@
+[Unit]
+Description=Kramgo Ollama watchdog
+After=network-online.target ollama.service
+Wants=network-online.target ollama.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/home/dtk1376
+ExecStart=/home/dtk1376/kramgo-watchdog --ollama-url http://127.0.0.1:11434 --model crystal:latest --service-name ollama --interval 30s --max-failures 3 --prompt "Reply with OK only."
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
