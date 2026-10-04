@@ -110,7 +110,7 @@ func (s *Service) proxyOllamaRequest(w http.ResponseWriter, r *http.Request, pat
 	}
 	defer r.Body.Close()
 
-	body, err = normalizeOllamaRequestBody(body)
+	body, streamRequested, err := normalizeOllamaRequestBody(body)
 	if err != nil {
 		return fmt.Errorf("normalize request body: %w", err)
 	}
@@ -131,18 +131,31 @@ func (s *Service) proxyOllamaRequest(w http.ResponseWriter, r *http.Request, pat
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("read ollama response: %w", err)
-	}
-
 	for key, values := range resp.Header {
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
+	if w.Header().Get("Content-Type") == "" {
+		w.Header().Set("Content-Type", "application/json")
+	}
 	w.WriteHeader(resp.StatusCode)
+
+	if streamRequested {
+		bytesWritten, err := streamResponseBody(w, resp.Body)
+		if err != nil {
+			log.Printf("proxy stream fail id=%s endpoint=%s status=%d elapsed=%s err=%v", requestID, path, resp.StatusCode, time.Since(started), err)
+			return fmt.Errorf("stream response: %w", err)
+		}
+		log.Printf("proxy success id=%s endpoint=%s status=%d response_bytes=%d streamed=true elapsed=%s", requestID, path, resp.StatusCode, bytesWritten, time.Since(started))
+		return nil
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("read ollama response: %w", err)
+	}
+
 	_, err = w.Write(respBody)
 	if err != nil {
 		log.Printf("proxy write fail id=%s endpoint=%s status=%d elapsed=%s err=%v", requestID, path, resp.StatusCode, time.Since(started), err)
@@ -153,23 +166,53 @@ func (s *Service) proxyOllamaRequest(w http.ResponseWriter, r *http.Request, pat
 	return nil
 }
 
-func normalizeOllamaRequestBody(body []byte) ([]byte, error) {
+func normalizeOllamaRequestBody(body []byte) ([]byte, bool, error) {
 	var payload map[string]any
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return body, nil
+		return body, false, nil
 	}
 
-	if _, exists := payload["stream"]; !exists {
-		payload["stream"] = false
-	} else if streamVal, ok := payload["stream"].(bool); ok && streamVal {
+	streamRequested := false
+	if streamVal, exists := payload["stream"]; exists {
+		if streamBool, ok := streamVal.(bool); ok {
+			streamRequested = streamBool
+		}
+	} else {
 		payload["stream"] = false
 	}
 
 	updated, err := json.Marshal(payload)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return updated, nil
+	return updated, streamRequested, nil
+}
+
+func streamResponseBody(w http.ResponseWriter, body io.Reader) (int, error) {
+	flusher, _ := w.(http.Flusher)
+	buffer := make([]byte, 32*1024)
+	total := 0
+
+	for {
+		readBytes, readErr := body.Read(buffer)
+		if readBytes > 0 {
+			written, writeErr := w.Write(buffer[:readBytes])
+			total += written
+			if writeErr != nil {
+				return total, writeErr
+			}
+			if flusher != nil {
+				flusher.Flush()
+			}
+		}
+
+		if readErr != nil {
+			if readErr == io.EOF {
+				return total, nil
+			}
+			return total, readErr
+		}
+	}
 }
 
 func (s *Service) proxyJSONRequest(w http.ResponseWriter, r *http.Request, path string, payload any) error {
