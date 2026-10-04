@@ -18,6 +18,8 @@ func main() {
 	flag.DurationVar(&cfg.Interval, "interval", cfg.Interval, "seconds between health checks")
 	flag.IntVar(&cfg.MaxFailures, "max-failures", cfg.MaxFailures, "number of failed checks before a restart")
 	flag.StringVar(&cfg.HealthPrompt, "prompt", cfg.HealthPrompt, "health check prompt to send to the model")
+	flag.BoolVar(&cfg.RebuildModel, "rebuild-model", cfg.RebuildModel, "rebuild the model from the Modelfile when a restart is triggered")
+	flag.StringVar(&cfg.ModelFilePath, "modelfile", cfg.ModelFilePath, "path to the Modelfile used to recreate the model")
 	flag.Parse()
 
 	if err := cfg.Validate(); err != nil {

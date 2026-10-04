@@ -13,6 +13,20 @@ func TestResponseLooksCorrupted(t *testing.T) {
 	}
 }
 
+func TestHealthResponseValidation(t *testing.T) {
+	for _, s := range []string{"OK", "ok", "OK.", " OK\n", "okay"} {
+		if !looksLikeOKResponse(s) {
+			t.Fatalf("expected %q to pass as a healthy response", s)
+		}
+	}
+
+	for _, s := range []string{".", "PRESIDIO", "The system is okay", "blah blah"} {
+		if looksLikeOKResponse(s) {
+			t.Fatalf("expected %q to fail as a healthy response", s)
+		}
+	}
+}
+
 func TestWatchdogConfigValidatesRequiredFields(t *testing.T) {
 	cfg := WatchdogConfig{}
 	if err := cfg.Validate(); err == nil {
