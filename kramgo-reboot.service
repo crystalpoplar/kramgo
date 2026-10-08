@@ -1,0 +1,6 @@
+[Unit]
+Description=Kramgo daily reboot trigger
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl reboot

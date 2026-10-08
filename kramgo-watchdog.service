@@ -8,7 +8,7 @@ Type=simple
 User=root
 Group=root
 WorkingDirectory=/home/dtk1376
-ExecStart=/home/dtk1376/kramgo-watchdog --ollama-url http://127.0.0.1:11434 --model crystal:latest --service-name ollama --interval 30s --max-failures 3 --prompt "Return exactly the word OK and nothing else." --rebuild-model --modelfile /home/dtk1376/Modelfile
+ExecStart=/home/dtk1376/kramgo-watchdog --ollama-url http://127.0.0.1:11434 --model crystal:latest --service-name ollama --interval 10m --max-failures 3 --prompt "Return exactly the word OK and nothing else." --rebuild-model --modelfile /home/dtk1376/Modelfile
 Restart=on-failure
 RestartSec=10
 

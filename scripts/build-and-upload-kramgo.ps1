@@ -21,6 +21,8 @@ go build -o (Join-Path $distDir "kramgo-watchdog") "$repoRoot/cmd/kramgo-watchdo
 
 Copy-Item (Join-Path $repoRoot "kramgo-ollama.service") $distDir -Force
 Copy-Item (Join-Path $repoRoot "kramgo-watchdog.service") $distDir -Force
+Copy-Item (Join-Path $repoRoot "kramgo-reboot.service") $distDir -Force
+Copy-Item (Join-Path $repoRoot "kramgo-reboot.timer") $distDir -Force
 Copy-Item (Join-Path $repoRoot "install-kramgo-ollama.sh") $distDir -Force
 
 Write-Host "Uploading to ${RemoteHost}:${RemoteDir}"
@@ -31,6 +33,8 @@ $files = @(
     (Join-Path $distDir "kramgo-watchdog"),
     (Join-Path $distDir "kramgo-ollama.service"),
     (Join-Path $distDir "kramgo-watchdog.service"),
+    (Join-Path $distDir "kramgo-reboot.service"),
+    (Join-Path $distDir "kramgo-reboot.timer"),
     (Join-Path $distDir "install-kramgo-ollama.sh")
 )
 
@@ -39,7 +43,12 @@ foreach ($file in $files) {
 }
 
 $remoteFix = @"
-for f in '${RemoteDir}/install-kramgo-ollama.sh' '${RemoteDir}/kramgo-ollama.service' '${RemoteDir}/kramgo-watchdog.service'; do
+for f in \
+  '${RemoteDir}/install-kramgo-ollama.sh' \
+  '${RemoteDir}/kramgo-ollama.service' \
+  '${RemoteDir}/kramgo-watchdog.service' \
+  '${RemoteDir}/kramgo-reboot.service' \
+  '${RemoteDir}/kramgo-reboot.timer'; do
   sed -i 's/\r$//' "$f"
 done
 chmod 755 '${RemoteDir}/kramgo' '${RemoteDir}/kramgo-watchdog' '${RemoteDir}/install-kramgo-ollama.sh'

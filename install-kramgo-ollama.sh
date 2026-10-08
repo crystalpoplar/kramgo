@@ -5,6 +5,8 @@ INSTALL_DIR="${INSTALL_DIR:-/home/dtk1376}"
 SOURCE_DIR="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 SERVICE_NAME="kramgo-ollama"
 WATCHDOG_SERVICE_NAME="kramgo-watchdog"
+REBOOT_SERVICE_NAME="kramgo-reboot"
+REBOOT_TIMER_NAME="kramgo-reboot.timer"
 
 if [[ $EUID -ne 0 ]]; then
   echo "This script must be run as root." >&2
@@ -15,7 +17,9 @@ for required in \
   "${SOURCE_DIR}/kramgo" \
   "${SOURCE_DIR}/kramgo-watchdog" \
   "${SOURCE_DIR}/kramgo-ollama.service" \
-  "${SOURCE_DIR}/kramgo-watchdog.service"; do
+  "${SOURCE_DIR}/kramgo-watchdog.service" \
+  "${SOURCE_DIR}/kramgo-reboot.service" \
+  "${SOURCE_DIR}/kramgo-reboot.timer"; do
   if [[ ! -f "${required}" ]]; then
     echo "Missing required file: ${required}" >&2
     exit 1
@@ -41,9 +45,12 @@ install_if_needed "${SOURCE_DIR}/kramgo" "${INSTALL_DIR}/kramgo" "0755"
 install_if_needed "${SOURCE_DIR}/kramgo-watchdog" "${INSTALL_DIR}/kramgo-watchdog" "0755"
 install_if_needed "${SOURCE_DIR}/kramgo-ollama.service" "/etc/systemd/system/${SERVICE_NAME}.service" "0644"
 install_if_needed "${SOURCE_DIR}/kramgo-watchdog.service" "/etc/systemd/system/${WATCHDOG_SERVICE_NAME}.service" "0644"
+install_if_needed "${SOURCE_DIR}/kramgo-reboot.service" "/etc/systemd/system/${REBOOT_SERVICE_NAME}.service" "0644"
+install_if_needed "${SOURCE_DIR}/kramgo-reboot.timer" "/etc/systemd/system/${REBOOT_TIMER_NAME}" "0644"
 
 systemctl daemon-reload
-systemctl enable --now "${SERVICE_NAME}.service" "${WATCHDOG_SERVICE_NAME}.service"
+systemctl enable --now "${SERVICE_NAME}.service" "${WATCHDOG_SERVICE_NAME}.service" "${REBOOT_TIMER_NAME}"
 
 systemctl status "${SERVICE_NAME}.service" --no-pager
 systemctl status "${WATCHDOG_SERVICE_NAME}.service" --no-pager
+systemctl status "${REBOOT_TIMER_NAME}" --no-pager

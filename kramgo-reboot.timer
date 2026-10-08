@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily reboot at 03:00
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=kramgo-reboot.service
+
+[Install]
+WantedBy=timers.target

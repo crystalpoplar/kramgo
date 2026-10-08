@@ -1,6 +1,11 @@
 package app
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestResponseLooksCorrupted(t *testing.T) {
 	corrupted := " of⠀⠀.,⠀-s-⠀⠀⠀⠀,,⠀,-.-,.\no in⠀⠀�⠀⠀⠀⠀..."
@@ -42,5 +47,21 @@ func TestWatchdogConfigValidatesRequiredFields(t *testing.T) {
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("expected config to validate, got error: %v", err)
+	}
+}
+
+func TestWatchdogServiceUsesTenMinuteInterval(t *testing.T) {
+	paths := []string{
+		filepath.Join("..", "..", "kramgo-watchdog.service"),
+		filepath.Join("..", "..", "dist", "linux-amd64", "kramgo-watchdog.service"),
+	}
+	for _, p := range paths {
+		content, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatalf("read %s: %v", p, err)
+		}
+		if !strings.Contains(string(content), "--interval 10m") {
+			t.Fatalf("%s should contain --interval 10m, got: %s", p, string(content))
+		}
 	}
 }
